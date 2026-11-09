@@ -1,0 +1,56 @@
+{
+  "name": "novoc",
+  "version": "2.0.0",
+  "private": true,
+  "author": "Illuminos",
+  "license": "MIT",
+  "homepage": "https://audio-visualizer.com/",
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "description": "NoVoc — offline audio visualizer: preview in browser, deterministic frame-by-frame export via ffmpeg with true transparency, trim/length, auto-save folders, render queue with proxy previews, 9:16 presets.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/spectrum.test.mjs",
+    "test:e2e": "node test/e2e.mjs",
+    "sample": "bash test/make-sample.sh",
+    "desktop": "electron .",
+    "desktop:dev": "electron . --dev",
+    "dist": "electron-builder --linux AppImage",
+    "dist:rpm": "electron-builder --linux rpm",
+    "dist:smoke": "electron-builder --linux AppImage && node test/appimage-smoke.mjs",
+    "vendor:ffmpeg": "bash test/vendor-ffmpeg.sh",
+    "stage": "node test/stage-github.mjs"
+  },
+  "build": {
+    "appId": "com.novoc.app",
+    "productName": "NoVoc",
+    "asar": false,
+    "files": [
+      "desktop/main.cjs",
+      "server.js",
+      "public/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop/vendor/ffmpeg",
+        "to": "ffmpeg"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "logo/icon-512.png",
+      "category": "AudioVideo",
+      "executableName": "novoc",
+      "maintainer": "NoVoc",
+      "synopsis": "Offline audio visualizer with transparent frame-by-frame exports"
+    },
+    "artifactName": "NoVoc-${version}-${arch}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^37.10.3",
+    "electron-builder": "^26.18.0"
+  }
+}

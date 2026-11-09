@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoVoc — local audio visualizer</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">NoVoc</span>
+    <span class="tag">local · offline</span>
+  </div>
+  <p class="sub">Preview in the browser — export renders frame-by-frame and is encoded by ffmpeg: no capture, no artifacts, true alpha.</p>
+  <p class="hint" id="capsNote"></p>
+</header>
+
+<div class="layout">
+
+  <!-- ============ left: look & export settings ============ -->
+  <aside class="panel col-left">
+
+    <section class="card">
+      <h2>Style</h2>
+      <label>Graph type
+        <select id="type"></select>
+      </label>
+      <p id="styleHint" class="hint"></p>
+      <div class="row">
+        <label>Color <input type="color" id="color" value="#00e5ff"></label>
+        <label>2nd color <input type="color" id="color2" value="#ff2d95"></label>
+      </div>
+      <div class="row checks">
+        <label><input type="checkbox" id="gradient" checked> Gradient</label>
+        <label><input type="checkbox" id="glow" checked> Glow</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Shape</h2>
+      <div class="row">
+        <label>Bar width <input type="range" id="barWidth" min="1" max="40" value="6"><output for="barWidth">6</output></label>
+        <label>Gap <input type="range" id="gap" min="0" max="24" value="2"><output for="gap">2</output></label>
+      </div>
+      <div class="row">
+        <label>Line width <input type="range" id="lineWidth" min="1" max="14" value="3"><output for="lineWidth">3</output></label>
+        <label>Sensitivity <input type="range" id="sensitivity" min="0.5" max="4" step="0.1" value="1.4"><output for="sensitivity">1.4×</output></label>
+      </div>
+      <div class="row">
+        <label>Smoothing <input type="range" id="smoothing" min="0" max="0.98" step="0.01" value="0.8"><output for="smoothing">0.8</output></label>
+        <label>Detail (FFT)
+          <select id="fft">
+            <option>256</option><option>512</option><option selected>1024</option>
+            <option>2048</option><option>4096</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Export</h2>
+      <label>Aspect ratio
+        <select id="ratio">
+          <option value="9:16" selected>9:16 — Reels / TikTok (1080×1920)</option>
+          <option value="1:1">1:1 — Square (1080×1080)</option>
+          <option value="4:5">4:5 — Feed portrait (1080×1350)</option>
+          <option value="16:9">16:9 — Landscape (1920×1080)</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <div class="row" id="customRow" hidden>
+        <label>Width <input type="number" id="cWidth" value="1080" min="16" max="3840" step="2"></label>
+        <label>Height <input type="number" id="cHeight" value="1920" min="16" max="3840" step="2"></label>
+      </div>
+      <div class="row">
+        <label>FPS
+          <select id="fps"><option>24</option><option selected>30</option><option>60</option></select>
+        </label>
+        <label>Format
+          <select id="format">
+            <option value="ffv1" selected>FFV1 .mkv (transparent, lossless)</option>
+            <option value="webm">WebM VP9 (transparent)</option>
+            <option value="prores">ProRes 4444 .mov (transparent)</option>
+            <option value="mp4">MP4 H.264 (solid bg)</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Quality <input type="range" id="crf" min="10" max="50" value="30"><output for="crf">30</output></label>
+        <label id="bgRow" hidden><span id="bgLabel">MP4 background</span>
+          <input type="color" id="bgcolor" value="#140f1e">
+        </label>
+      </div>
+      <div class="row checks">
+        <label><input type="checkbox" id="loudnorm"> Loudness-normalize (−14 LUFS)</label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Length &amp; fades</h2>
+      <div class="row">
+        <label>Start (s) <input type="number" id="trimStart" value="0" min="0" step="0.1"></label>
+        <label>End (s) <input type="number" id="trimEnd" value="0" min="0" step="0.1"></label>
+      </div>
+      <div class="row">
+        <button id="trimMarkStart" class="ghost" disabled>⬇ Start at playhead</button>
+        <button id="trimMarkEnd" class="ghost" disabled>⬇ End at playhead</button>
+      </div>
+      <div class="row">
+        <button id="trimFull" class="ghost" disabled>Full length</button>
+        <button id="trimClear" class="ghost" disabled>Reset</button>
+      </div>
+      <p id="trimInfo" class="hint">No track loaded — trim applies to the loaded track only.</p>
+      <div class="row">
+        <label>Fade in (s) <input type="number" id="fadeIn" value="0" min="0" max="60" step="0.1"></label>
+        <label>Fade out (s) <input type="number" id="fadeOut" value="0" min="0" max="60" step="0.1"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Auto-save</h2>
+      <label>Save folder (absolute path on this machine)
+        <input type="text" id="saveDir" placeholder="/home/you/Videos/NoVoc — empty = keep in out/jobs only">
+      </label>
+      <label>Filename template
+        <input type="text" id="saveTemplate" placeholder="{name}-{w}x{h}" spellcheck="false">
+      </label>
+      <p class="hint">Tokens: {name} {style} {w} {h} {fps} {date} {time} {id}</p>
+      <div class="row">
+        <button id="saveSettingsBtn" class="ghost">Save settings</button>
+        <span id="saveStatus" class="hint"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Render this track</h2>
+      <button id="exportBtn" class="primary" disabled>Export video</button>
+      <div class="barwrap"><div id="framesBar"></div></div>
+      <div class="barwrap"><div id="encodeBar"></div></div>
+      <p id="exportStatus" class="hint"></p>
+      <p id="exportLink"></p>
+    </section>
+  </aside>
+
+  <!-- ============ center: preview stage ============ -->
+  <main class="col-center">
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+    </div>
+    <div class="transport">
+      <button id="playBtn" disabled>▶ Play</button>
+      <button id="stopBtn" disabled>⏹</button>
+      <span id="time">0:00 / 0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+      <label class="hint"><input type="checkbox" id="guides"> Reels/TikTok safe guides</label>
+      <label class="hint">Preview BG
+        <select id="prevg">
+          <option value="transparent" selected>Transparent</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint">Space = play/pause · S = stop · exports run in the background: keep tweaking while they render.</p>
+  </main>
+
+  <!-- ============ right: library + queue ============ -->
+  <aside class="panel col-right">
+
+    <section class="card grow">
+      <h2>Library <span class="hint" id="libCount"></span></h2>
+      <label class="dropzone" id="dropZone">
+        <input type="file" id="file" accept="audio/*" multiple hidden>
+        <span>＋ Drop audio files here or click to browse<span class="hint" id="fileInfo"></span></span>
+      </label>
+      <div id="library" class="list"></div>
+    </section>
+
+    <section class="card grow">
+      <h2>Queue <span class="hint" id="queueHint"></span></h2>
+      <div class="row">
+        <button id="runQueueBtn" class="primary" disabled>▶ Run queue</button>
+        <button id="clearDoneBtn" class="ghost" disabled>Clear done</button>
+      </div>
+      <div id="queueList" class="list"></div>
+    </section>
+  </aside>
+</div>
+
+<!-- ============ preview modal ============ -->
+<div id="previewModal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="previewTitle">Render preview</h3>
+      <button id="previewClose" class="ghost">✕</button>
+    </div>
+    <video id="previewVideo" controls playsinline></video>
+    <p class="hint">Proxy preview: low-res H.264 with transparency shown over a checkerboard. The real deliverable (FFV1/ProRes/WebM/MP4) keeps true alpha.</p>
+    <p id="previewMeta" class="hint"></p>
+    <div class="row">
+      <a id="previewDownload" class="primary btnlink" href="#" download>⬇ Download final</a>
+      <button id="previewRedo" class="ghost">↻ Redo render</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

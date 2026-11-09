@@ -31,7 +31,7 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 Developed and tested daily on Fedora (KDE) with Node 22 + ffmpeg 7.1. Browser mode is the
 fully supported path on **all** operating systems; the windowed desktop builds are
 Linux-only for now (Electron can also produce Windows `.exe` and macOS `.dmg`, but they
-have never been built or tested here — contributions welcome).
+have never been built or tested here - contributions welcome).
 
 ## Built with local AI (transparency note)
 

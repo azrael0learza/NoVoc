@@ -14,7 +14,7 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 2. **Backend encoding, frame-exact** — exports are *not* screen recordings. The browser
    renders every frame deterministically from decoded audio and uploads PNGs; `ffmpeg`
    assembles the video server-side. Zero capture artifacts; preview == export.
-3. **Reels/TikTok Preset** — 9:16 portrait default, safe-area guides in the preview
+3. **Made for Reels/TikTok** — 9:16 portrait default, safe-area guides in the preview
    (never in exports), loudness normalization presets.
 4. **Studio workflow (v2)** — multi-track library, render queue with per-track settings,
    trim/fades, auto-save to your folder of choice with filename templates, and an instant
@@ -31,7 +31,7 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 Developed and tested daily on Fedora (KDE) with Node 22 + ffmpeg 7.1. Browser mode is the
 fully supported path on **all** operating systems; the windowed desktop builds are
 Linux-only for now (Electron can also produce Windows `.exe` and macOS `.dmg`, but they
-have never been built or tested here - contributions welcome).
+have never been built or tested here — contributions welcome).
 
 ## Built with local AI (transparency note)
 
@@ -58,17 +58,17 @@ installed. Build it once:
 npm install                # dev-only deps: electron + electron-builder (~1 min)
 npm run vendor:ffmpeg      # fetches the static ffmpeg to bundle (once; it is deliberately
                            # NOT in the repo: 176 MB exceeds GitHub's per-file limit)
-npm run dist               # → dist/NoVoc-2.0.0-x86_64.AppImage  (~178 MB)
-npm run dist:rpm           # → dist/NoVoc-2.0.0-x86_64.rpm       (~131 MB, needs rpmbuild)
+npm run dist               # → dist/NoVoc-<ver>-x86_64.AppImage  (~178 MB)
+npm run dist:rpm           # → dist/NoVoc-<ver>-x86_64.rpm       (~131 MB, needs rpmbuild)
 npm run dist:smoke         # builds, then headless-verifies the packaged app boots + probes codecs
 ```
 
 Run it:
 
-- **AppImage:** `chmod +x NoVoc-2.0.0-x86_64.AppImage && ./NoVoc-2.0.0-x86_64.AppImage`.
+- **AppImage:** `chmod +x NoVoc-<ver>-x86_64.AppImage && ./NoVoc-<ver>-x86_64.AppImage`.
   On distros without the FUSE 2 library (Fedora 43+, e.g.) run it as
-  `./NoVoc-2.0.0-x86_64.AppImage --appimage-extract-and-run` instead.
-- **RPM:** `sudo dnf install dist/NoVoc-2.0.0-x86_64.rpm` — gets a normal menu entry and
+  `./NoVoc-<ver>-x86_64.AppImage --appimage-extract-and-run` instead.
+- **RPM:** `sudo dnf install dist/NoVoc-<ver>-x86_64.rpm` — gets a normal menu entry and
   needs no FUSE at all; this is the smoothest option on Fedora.
 - While developing: `npm run desktop` runs the shell against the live source files.
 

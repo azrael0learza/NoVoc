@@ -2,7 +2,7 @@
   <img src="logo/icon-512.png" alt="NoVoc logo" width="120">
 </p>
 
-# NoVoc — offline audio visualizer studio
+# NoVoc - offline audio visualizer studio
 
 **NoVoc** ("No Vocals") is a fully offline, self-contained visualizer studio inspired by
 [audio-visualizer.com](https://audio-visualizer.com/). No npm dependencies, no build step, no internet.

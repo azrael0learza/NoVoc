@@ -24,9 +24,9 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
 | Way to run | Works on | You need |
 |---|---|---|
-| **Browser mode** — `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
-| **Desktop AppImage** — single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
-| **Desktop RPM** — installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
+| **Browser mode** - `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
+| **Desktop AppImage** - single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
+| **Desktop RPM** - installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
 
 Developed and tested daily on Fedora (KDE) with Node 22 + ffmpeg 7.1. Browser mode is the
 fully supported path on **all** operating systems; the windowed desktop builds are

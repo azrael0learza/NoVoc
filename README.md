@@ -14,7 +14,7 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 2. **Backend encoding, frame-exact** — exports are *not* screen recordings. The browser
    renders every frame deterministically from decoded audio and uploads PNGs; `ffmpeg`
    assembles the video server-side. Zero capture artifacts; preview == export.
-3. **Made for Reels/TikTok** — 9:16 portrait default, safe-area guides in the preview
+3. **Reels/TikTok Preset** — 9:16 portrait default, safe-area guides in the preview
    (never in exports), loudness normalization presets.
 4. **Studio workflow (v2)** — multi-track library, render queue with per-track settings,
    trim/fades, auto-save to your folder of choice with filename templates, and an instant

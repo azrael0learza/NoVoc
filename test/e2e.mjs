@@ -98,9 +98,12 @@ function ffprobe(file) {
 }
 
 function alphaStats(file, frame = 24) {
-  // dump one frame as raw RGBA and inspect alpha channel
+  // dump one frame as raw RGBA and inspect alpha channel.
+  // WebM VP9 alpha is only visible to the libvpx decoder — ffmpeg's built-in
+  // vp9 decoder silently drops it (same gotcha as the server capability probe).
+  const pre = /\.webm$/i.test(file) ? ['-c:v', 'libvpx-vp9'] : [];
   return new Promise((resolve, reject) => {
-    const p = spawn('ffmpeg', ['-v', 'error', '-i', file, '-vf', `select=eq(n\\,${frame})`, '-frames:v', '1', '-pix_fmt', 'rgba', '-f', 'rawvideo', '-']);
+    const p = spawn('ffmpeg', [...pre, '-v', 'error', '-i', file, '-vf', `select=eq(n\\,${frame})`, '-frames:v', '1', '-pix_fmt', 'rgba', '-f', 'rawvideo', '-']);
     const chunks = [];
     p.stdout.on('data', (d) => chunks.push(d));
     p.stderr.on('data', () => {});
@@ -139,7 +142,8 @@ try {
     hasPreviewUI: !!document.getElementById('previewModal') })`);
   ok('library + queue/preview UI present', lib.n === 1 && lib.hasQueueUI && lib.hasPreviewUI, JSON.stringify(lib));
 
-  // codec capabilities of this machine's ffmpeg (some libvpx builds drop alpha)
+  // codec capabilities of this machine's ffmpeg (the probe decodes WebM with
+  // libvpx-vp9 on purpose — ffmpeg's built-in vp9 decoder ignores WebM alpha)
   const capsBody = await (await fetch(`http://127.0.0.1:${PORT}/api/caps`)).json();
   const caps = capsBody.caps || {};
   ok('/api/caps reports codec capabilities',
@@ -151,6 +155,9 @@ try {
     const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); };
     set('ratio', 'custom'); set('cWidth', '270'); set('cHeight', '480');
     set('fps', '24'); set('fft', '1024'); set('type', 'bar'); set('crf', '32');
+    // pin the save folder to a temp dir BEFORE the first export, so no test
+    // output ever lands in the user's real auto-save folder
+    set('saveDir', ${JSON.stringify(SAVE_DIR)});
     return true;
   })()`;
   await evaluate(cdp, setFields);
@@ -199,7 +206,10 @@ try {
     const v1 = pr1.streams.find((s) => s.codec_type === 'video');
     const a1 = pr1.streams.find((s) => s.codec_type === 'audio');
     ok('webm: vp9 codec', v1.codec_name === 'vp9', v1.codec_name);
-    ok('webm: yuva420p (alpha pixel format)', v1.pix_fmt === 'yuva420p', v1.pix_fmt);
+    // WebM signals alpha via the alpha_mode=1 tag on a yuv420p base stream —
+    // yuva420p here would be wrong; the libvpx decoder reassembles the alpha.
+    const alphaTag = v1.tags && v1.tags.alpha_mode;
+    ok('webm: alpha_mode tag', alphaTag === '1', `alpha_mode=${alphaTag}`);
     ok('webm: 270x480 portrait', v1.width === 270 && v1.height === 480, `${v1.width}x${v1.height}`);
     ok('webm: audio present (opus)', a1 && a1.codec_name === 'opus', a1?.codec_name);
     const dur = Number(pr1.format.duration);
@@ -251,7 +261,7 @@ try {
     // restore defaults for following exports
     await evaluate(cdp, `(async () => {
       const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); };
-      set('trimStart', '0'); set('trimEnd', '0'); set('fadeIn', '0'); set('fadeOut', '0'); set('saveDir', '');
+      set('trimStart', '0'); set('trimEnd', '0'); set('fadeIn', '0'); set('fadeOut', '0'); set('saveDir', ${JSON.stringify(SAVE_DIR)});
     })()`);
   }
 

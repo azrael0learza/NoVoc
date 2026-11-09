@@ -2,10 +2,11 @@
   <img src="logo/icon-512.png" alt="NoVoc logo" width="120">
 </p>
 
-# NoVoc - offline audio visualizer studio
+# NoVoc — offline audio visualizer studio
 
-**NoVoc** is a fully offline, self-contained visualizer studio inspired by
-[audio-visualizer.com](https://audio-visualizer.com/). No npm dependencies, no build step, no internet.
+**NoVoc** ("No Vocals") is a fully offline, self-contained visualizer studio inspired by
+[audio-visualizer.com](https://audio-visualizer.com/), built for content creators who
+composite visuals into their edits. No npm dependencies, no build step, no internet.
 Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
 1. **True transparency** — exports carry a real alpha channel (not green screen, not keyed
@@ -24,9 +25,9 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
 | Way to run | Works on | You need |
 |---|---|---|
-| **Browser mode** - `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
-| **Desktop AppImage** - single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
-| **Desktop RPM** - installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
+| **Browser mode** — `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
+| **Desktop AppImage** — single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
+| **Desktop RPM** — installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
 
 Developed and tested daily on Fedora (KDE) with Node 22 + ffmpeg 7.1. Browser mode is the
 fully supported path on **all** operating systems; the windowed desktop builds are
@@ -35,9 +36,12 @@ have never been built or tested here — contributions welcome).
 
 ## Built with local AI (transparency note)
 
-This project was created with the coding help of **Qwen3.8 Flash Next**, **running locally**. No code,
+This project was created with the substantial coding help of **Qwen3.8 Flash Next**, an
+open-weight language model **running locally on the author's own machine** — no code,
 audio, or prompts were ever sent to any cloud AI service, and nothing phones home at
-runtime (NoVoc needs no internet, ever).
+runtime (NoVoc needs no internet, ever). Direction, design decisions, review and testing
+were human. If you prefer not to use AI-assisted software, you now know — that's the
+point of this section.
 
 ## Run it
 
@@ -85,7 +89,7 @@ Notes:
 
 ## The dashboard
 
-![NoVoc dashboard](docs/qa/newdashboard.png)
+![NoVoc dashboard](docs/qa/dashboard.png)
 
 ```
 ┌ styles / shape / export / length / auto-save │ preview stage │ library │ queue ┐
@@ -114,7 +118,7 @@ Notes:
 |---|---|---|
 | **FFV1 (.mkv)** | ✅ lossless alpha | Best default for compositing. Smaller than ProRes, mathematically lossless. DaVinci Resolve, Premiere (with codec pack) and most NLEs accept it. |
 | **ProRes 4444 (.mov)** | ✅ 12-bit alpha | The editor-friendly choice — imports natively into Premiere, Resolve, FCP with alpha. Large files. |
-| **WebM VP9 (.webm)** | ✅ *if your ffmpeg supports VP9 alpha* | Small + transparent, web-playable. **Caveat:** some libvpx builds (e.g. libvpx 1.15 on some Linux distros) silently discard VP9 alpha. |
+| **WebM VP9 (.webm)** | ✅ *when the probe verifies it on your machine* | Small + transparent, web-playable — real alpha in browsers and other libvpx-based tools. **Caveat:** programs that decode VP9 with ffmpeg's *built-in* decoder (some players) ignore WebM alpha and show it opaque; for NLE compositing prefer FFV1 or ProRes. |
 | **MP4 H.264 (.mp4)** | ❌ solid background of your choice | Ready to upload directly to TikTok/Reels/YouTube, maximum compatibility. |
 
 ### The transparency probe
@@ -122,8 +126,13 @@ Notes:
 On startup the server encodes tiny test frames with each transparent codec and verifies
 the alpha channel actually survives decode **on your machine**. Broken options are greyed
 out with an explanation, a working default is auto-selected, and the server refuses any
-job that would come out opaque. Result on this repo's test machine (Fedora, ffmpeg 7.1,
-libvpx 1.15): `{ webmAlpha: false, ffv1Alpha: true, proresAlpha: true }`.
+job that would come out opaque. Result on this repo's test machine (Fedora, ffmpeg 7.1.5
+and the bundled master build): `{ webmAlpha: true, ffv1Alpha: true, proresAlpha: true }`.
+
+Why the probe decodes WebM with `-c:v libvpx-vp9` specifically: WebM stores VP9 alpha in
+a side channel that only libvpx reads — ffmpeg's built-in VP9 decoder silently drops it.
+Decoding any other way reports a *false negative* (an earlier NoVoc release did exactly
+that and wrongly hid the WebM option — fixed in 2.0.2, credit to an external code review).
 
 Compositing tip: place the transparent export on a track above your background clip — the
 alpha does the rest. For DaVinci Resolve, FFV1/ProRes alpha shows up as a proper

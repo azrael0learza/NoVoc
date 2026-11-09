@@ -112,7 +112,11 @@ function framePath(job, idx, ext) {
 
 // ---- codec capability probe ------------------------------------------------
 // Whether transparency survives a codec depends on the local ffmpeg/libvpx
-// build (e.g. libvpx 1.15 on some distros silently drops VP8/VP9 alpha).
+// build. CRITICAL gotcha (found via code review, re-verified on ffmpeg 7.1.5
+// and a master build): WebM VP9 stores alpha in a side channel that ONLY the
+// libvpx decoders read — ffmpeg's built-in vp9 decoder silently drops it.
+// So the webm probe MUST decode with -c:v libvpx-vp9, otherwise it yields a
+// false negative and wrongly hides a working WebM option.
 // Encode two small transparent frames per codec and verify the alpha channel
 // comes back on decode. Cached after the first run.
 
@@ -142,7 +146,10 @@ function probeTransparent(fmt) {
     enc.on('error', () => resolve(false));
     enc.on('close', (code) => {
       if (code !== 0) { fs.rmSync(tmp, { force: true }); return resolve(false); }
-      const dec = spawn(FFMPEG, ['-v', 'error', '-i', tmp, '-frames:v', '1', '-pix_fmt', 'rgba', '-f', 'rawvideo', 'pipe:1']);
+      const decArgs = ['-v', 'error'];
+      if (fmt === 'webm') decArgs.push('-c:v', 'libvpx-vp9'); // built-in vp9 decoder ignores WebM alpha
+      decArgs.push('-i', tmp, '-frames:v', '1', '-pix_fmt', 'rgba', '-f', 'rawvideo', 'pipe:1');
+      const dec = spawn(FFMPEG, decArgs);
       const chunks = [];
       dec.stdout.on('data', (d) => chunks.push(d));
       dec.stderr.resume();
@@ -404,7 +411,14 @@ async function handleApi(req, res, u) {
       });
     }
     const outExt = { webm: 'webm', mp4: 'mp4', prores: 'mov', ffv1: 'mkv' }[fmt];
-    const outFile = path.join(dir, `${base}-${body.width}x${body.height}.${outExt}`);
+    // dimensions must be plain integers — they end up in the output filename,
+    // so strings like "/../../x" must never reach path.join (-y would overwrite)
+    const Wn = Number(body.width), Hn = Number(body.height);
+    if (!Number.isInteger(Wn) || !Number.isInteger(Hn) || Wn < 16 || Wn > 7680 || Hn < 16 || Hn > 7680) {
+      await fsp.rm(dir, { recursive: true, force: true });
+      return json(res, 400, { ok: false, error: 'width/height must be whole numbers between 16 and 7680' });
+    }
+    const outFile = path.join(dir, `${base}-${Wn}x${Hn}.${outExt}`);
     const job = {
       id, dir, outFile, audioExt: ext, frameExt: 'png', base,
       state: 'uploading', frames: 0, received: 0, totalFrames: 0,
@@ -442,6 +456,7 @@ async function handleApi(req, res, u) {
         return json(res, 400, { ok: false, error: 'invalid format' });
       }
       if (job.received === 0) return json(res, 400, { ok: false, error: 'no frames uploaded' });
+      if (job.state === 'encoding') return json(res, 409, { ok: false, error: 'encode already running for this job' });
       const caps = await getCaps();
       const alphaOk = { webm: caps.webmAlpha, prores: caps.proresAlpha, ffv1: caps.ffv1Alpha };
       if (cfg.format !== 'mp4' && alphaOk[cfg.format] === false) {
@@ -453,6 +468,8 @@ async function handleApi(req, res, u) {
       }
       // normalize numeric/string fields so nothing odd reaches ffmpeg or the fs
       const num = (v, d, max = 1e9) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : d; };
+      cfg.width = num(cfg.width, 1080, 7680);
+      cfg.height = num(cfg.height, 1920, 7680);
       cfg.fps = num(cfg.fps, 30, 240);
       cfg.crf = num(cfg.crf, 30, 63);
       cfg.trim = { start: num(cfg.trim?.start, 0, 86400), end: num(cfg.trim?.end, 0, 86400) };
@@ -499,6 +516,17 @@ function serveStatic(res, filePath) {
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://localhost');
   try {
+    // Loopback guard: only accept requests addressed to a local origin.
+    // Without this, DNS rebinding lets a random webpage talk to this server.
+    const hname = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
+    if (!['localhost', '127.0.0.1', '::1', '[::1]'].includes(hname)) {
+      res.writeHead(403); return res.end('forbidden host');
+    }
+    // JSON POSTs only: blocks cross-origin text/plain form POSTs (no preflight).
+    if (req.method === 'POST' && u.pathname.startsWith('/api/') &&
+        !String(req.headers['content-type'] || '').includes('application/json')) {
+      res.writeHead(415); return res.end('content-type must be application/json');
+    }
     if (u.pathname.startsWith('/api/')) return await handleApi(req, res, u);
 
     if (req.method === 'GET' && u.pathname.startsWith('/dl/')) {
@@ -506,7 +534,7 @@ const server = http.createServer(async (req, res) => {
       const job = jobs.get(parts[1]);
       if (!job || job.state !== 'done') { res.writeHead(404); return res.end('not ready'); }
       const f = path.join(job.dir, safeName(decodeURIComponent(parts[2] || '')));
-      if (!f.startsWith(job.dir)) { res.writeHead(403); return res.end('forbidden'); }
+      if (!f.startsWith(job.dir + path.sep)) { res.writeHead(403); return res.end('forbidden'); }
       res.writeHead(200, {
         'content-type': MIME[path.extname(f)] || 'application/octet-stream',
         'content-length': fs.statSync(f).size,
@@ -518,9 +546,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET') {
       let p = decodeURIComponent(u.pathname);
       if (p === '/') p = '/index.html';
-      if (p.startsWith('/test/')) return serveStatic(res, path.join(ROOT, p));
+      if (p.startsWith('/test/')) {
+        // dev/test convenience, but contained: encoded ../ must not escape test/
+        const t = path.join(ROOT, p);
+        const testRoot = path.join(ROOT, 'test');
+        if (!t.startsWith(testRoot + path.sep)) { res.writeHead(403); return res.end('forbidden'); }
+        return serveStatic(res, t);
+      }
       const resolved = path.join(PUB, p);
-      if (!resolved.startsWith(PUB)) { res.writeHead(403); return res.end('forbidden'); }
+      if (!resolved.startsWith(PUB + path.sep)) { res.writeHead(403); return res.end('forbidden'); }
       return serveStatic(res, resolved);
     }
     res.writeHead(405); res.end('method not allowed');
@@ -531,13 +565,19 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// clean job folders older than 24h at boot
-try {
-  for (const d of fs.readdirSync(JOBS)) {
-    const p = path.join(JOBS, d);
-    if (Date.now() - fs.statSync(p).mtimeMs > 24 * 3600 * 1000) fs.rmSync(p, { recursive: true, force: true });
-  }
-} catch {}
+// clean job folders older than 24h — at boot and every 6h, so a long-lived
+// server does not accumulate frames from failed jobs forever. Younger folders
+// stay put on purpose: the queue's retry reuses frames of a failed job.
+function cleanOldJobs() {
+  try {
+    for (const d of fs.readdirSync(JOBS)) {
+      const p = path.join(JOBS, d);
+      if (Date.now() - fs.statSync(p).mtimeMs > 24 * 3600 * 1000) fs.rmSync(p, { recursive: true, force: true });
+    }
+  } catch {}
+}
+cleanOldJobs();
+setInterval(cleanOldJobs, 6 * 3600 * 1000).unref();
 
 server.listen(PORT, '127.0.0.1', () => {
   log(`NoVoc serving on http://localhost:${PORT}`);

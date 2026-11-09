@@ -8,15 +8,15 @@
 [audio-visualizer.com](https://audio-visualizer.com/). No npm dependencies, no build step, no internet.
 Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
-1. **True transparency** — exports carry a real alpha channel (not green screen, not keyed
+1. **True transparency** - exports carry a real alpha channel (not green screen, not keyed
    black), so the visualizer drops over any background in your editor. The server probes
    your ffmpeg on startup and greys out any codec that would silently drop alpha here.
-2. **Backend encoding, frame-exact** — exports are *not* screen recordings. The browser
+2. **Backend encoding, frame-exact** - exports are *not* screen recordings. The browser
    renders every frame deterministically from decoded audio and uploads PNGs; `ffmpeg`
    assembles the video server-side. Zero capture artifacts; preview == export.
-3. **Reels/TikTok Preset** — 9:16 portrait default, safe-area guides in the preview
+3. **Reels/TikTok Preset** - 9:16 portrait default, safe-area guides in the preview
    (never in exports), loudness normalization presets.
-4. **Studio workflow (v2)** — multi-track library, render queue with per-track settings,
+4. **Studio workflow (v2)** - multi-track library, render queue with per-track settings,
    trim/fades, auto-save to your folder of choice with filename templates, and an instant
    scrubable MP4 proxy preview of every finished render.
 

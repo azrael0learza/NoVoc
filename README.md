@@ -4,7 +4,7 @@
 
 # NoVoc - offline audio visualizer studio
 
-**NoVoc** ("No Vocals") is a fully offline, self-contained visualizer studio inspired by
+**NoVoc** is a fully offline, self-contained visualizer studio inspired by
 [audio-visualizer.com](https://audio-visualizer.com/). No npm dependencies, no build step, no internet.
 Requires **Node.js 18+** and **ffmpeg** on your PATH.
 

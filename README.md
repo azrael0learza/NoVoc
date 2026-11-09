@@ -35,7 +35,7 @@ have never been built or tested here - contributions welcome).
 
 ## Built with local AI (transparency note)
 
-This project was created with the substantial coding help of **Qwen3.8 Flash Next**, **running locally**. No code,
+This project was created with coding help of **Qwen3.8 Flash Next**, **running locally**. No code,
 audio, or prompts were ever sent to any cloud AI service, and nothing phones home at
 runtime (NoVoc needs no internet, ever).
 

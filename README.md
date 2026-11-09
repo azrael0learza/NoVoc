@@ -85,7 +85,7 @@ Notes:
 
 ## The dashboard
 
-![NoVoc dashboard](docs/qa/dashboard.png)
+![NoVoc dashboard](docs/qa/newdashboard.png)
 
 ```
 ┌ styles / shape / export / length / auto-save │ preview stage │ library │ queue ┐

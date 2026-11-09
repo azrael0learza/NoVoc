@@ -2,11 +2,10 @@
   <img src="logo/icon-512.png" alt="NoVoc logo" width="120">
 </p>
 
-# NoVoc — offline audio visualizer studio
+# NoVoc - offline audio visualizer studio
 
-**NoVoc** ("No Vocals") is a fully offline, self-contained visualizer studio inspired by
-[audio-visualizer.com](https://audio-visualizer.com/), built for content creators who
-composite visuals into their edits. No npm dependencies, no build step, no internet.
+**NoVoc** is a fully offline, self-contained visualizer studio inspired by
+[audio-visualizer.com](https://audio-visualizer.com/). No npm dependencies, no build step, no internet.
 Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
 1. **True transparency** — exports carry a real alpha channel (not green screen, not keyed
@@ -15,7 +14,7 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 2. **Backend encoding, frame-exact** — exports are *not* screen recordings. The browser
    renders every frame deterministically from decoded audio and uploads PNGs; `ffmpeg`
    assembles the video server-side. Zero capture artifacts; preview == export.
-3. **Made for Reels/TikTok** — 9:16 portrait default, safe-area guides in the preview
+3. **Reels/TikTok Preset** — 9:16 portrait default, safe-area guides in the preview
    (never in exports), loudness normalization presets.
 4. **Studio workflow (v2)** — multi-track library, render queue with per-track settings,
    trim/fades, auto-save to your folder of choice with filename templates, and an instant
@@ -25,9 +24,9 @@ Requires **Node.js 18+** and **ffmpeg** on your PATH.
 
 | Way to run | Works on | You need |
 |---|---|---|
-| **Browser mode** — `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
-| **Desktop AppImage** — single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
-| **Desktop RPM** — installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
+| **Browser mode** - `node server.js`, open the page in any browser | Linux, macOS, Windows | Node.js 18+ and ffmpeg (6/7) on your PATH |
+| **Desktop AppImage** - single file, windowed app | Linux x86_64 (any recent distro) | Nothing bundled-in: it ships its own Node runtime **and** ffmpeg |
+| **Desktop RPM** - installs with a menu entry | Fedora / RHEL-family x86_64 | Nothing (the package carries everything) |
 
 Developed and tested daily on Fedora (KDE) with Node 22 + ffmpeg 7.1. Browser mode is the
 fully supported path on **all** operating systems; the windowed desktop builds are
@@ -36,12 +35,9 @@ have never been built or tested here — contributions welcome).
 
 ## Built with local AI (transparency note)
 
-This project was created with the substantial coding help of **Qwen3.8 Flash Next**, an
-open-weight language model **running locally on the author's own machine** — no code,
+This project was created with the coding help of **Qwen3.8 Flash Next**, **running locally**. No code,
 audio, or prompts were ever sent to any cloud AI service, and nothing phones home at
-runtime (NoVoc needs no internet, ever). Direction, design decisions, review and testing
-were human. If you prefer not to use AI-assisted software, you now know — that's the
-point of this section.
+runtime (NoVoc needs no internet, ever).
 
 ## Run it
 
@@ -89,26 +85,26 @@ Notes:
 
 ## The dashboard
 
-![NoVoc dashboard](docs/qa/dashboard.png)
+![NoVoc dashboard](docs/qa/newdashboard.png)
 
 ```
 ┌ styles / shape / export / length / auto-save │ preview stage │ library │ queue ┐
 ```
 
-- **Library (right side)** — drop in one or many audio files (MP3, WAV, M4A, OGG, FLAC).
+- **Library (right side)** - drop in one or many audio files (MP3, WAV, M4A, OGG, FLAC).
   Each track keeps its own decode cache; click *Load* to edit, *+ Queue* to enqueue a
   render of it with the current settings.
-- **Queue** — every queued item snapshots *all* settings (style, colors, size, fps, format,
+- **Queue** - every queued item snapshots *all* settings (style, colors, size, fps, format,
   trim, fades, save folder) at enqueue time, so changing controls afterwards never affects
   queued work. Hit **Run queue**: items render one after another in the browser while
   ffmpeg encodes overlap in the background. Finished items get **▶ Preview**, **⬇** and
   **↻ Redo**; failed items get **↻ Retry**.
-- **Length & fades** — set in/out points (mark buttons use the playhead position) and
+- **Length & fades** - set in/out points (mark buttons use the playhead position) and
   audio+visual fades. Everything downstream (export, proxy, auto-save) only contains and
   fades the selected segment.
-- **Auto-save** — pick a folder and a filename template once; every finished render is
+- **Auto-save** - pick a folder and a filename template once; every finished render is
   copied there automatically. Tokens: `{name} {w} {h} {fps} {style} {id} {date} {time}`.
-- **Preview render** — after any export, hit *▶ preview render* to watch a scrubable
+- **Preview render** - after any export, hit *▶ preview render* to watch a scrubable
   proxy MP4 (h264, shown over a checkerboard so you can judge where the transparency is)
   before pulling the mezzanine file into your editor.
 
